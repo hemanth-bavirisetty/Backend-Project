@@ -3,4 +3,7 @@
 /.vscode
 
 
+.env.*
 .env
+
+.aider.*
