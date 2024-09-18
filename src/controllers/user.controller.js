@@ -18,26 +18,42 @@ const registerUser = asyncHandler(async (req, res) => {
 	 * 8.check created user
 	 * 9.send response
 	 */
-
+	``;
 	//step 1
 	const { userName, email, password, fullName } = req.body;
-	console.log(userName, email, password, fullName);
+	console.log("user details: \n", userName, email, password, fullName);
+	console.log("request object contents :\n", req);
 
 	//step 2
-	if ([userName, email, password, fullName].some((f) => f.trin() === "")) {
+	if ([userName, email, password, fullName].some((f) => f.trim() === "")) {
 		throw new ApiError(400, "All fields are required");
 	}
 
 	//step 3
 	const existedUser = await User.findOne({ $or: [{ email }, { userName }] });
-	if (!existedUser) {
+	if (existedUser) {
 		throw new ApiError(409, "user already exists with this email or userName");
 	}
 
 	//step 4
+	console.log("files in request object :\n", req.files);
 	const avatarLocalPath = req.files?.avatar[0]?.path;
-	console.lof(req.files.avatar);
-	const coverImageLocalPath = req.files?.coverImage[0]?.path;
+	console.log("avatar in files in request object :\n", req.files.avatar);
+	const coverImageLocalPath =
+		(req.files.coverImage && req.files?.coverImage[0]?.path) || "";
+
+	// let coverImageLocalPath;
+	// if (
+	// 	req.files &&
+	// 	Array.isArray(req.files.coverImage) &&
+	// 	req.files.coverImage.length > 0
+	// ) {
+	// 	coverImageLocalPath = req.files.coverImage[0].path;
+	// }
+	console.log(
+		"coverimage in files in request object :\n",
+		req.files.coverImage
+	);
 	if (!avatarLocalPath) {
 		throw new ApiError(400, "Avatar Image is Required.");
 	}
@@ -45,6 +61,9 @@ const registerUser = asyncHandler(async (req, res) => {
 	//step 5
 	const avatar = await uploadOnCloudinary(avatarLocalPath);
 	const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+	console.log("cloudinary response object of avater \n", avatar);
+	console.log("cloudinary response object of coverImage \n", coverImage);
+
 	if (!avatar) {
 		throw new ApiError(400, "avatar is required");
 	}
@@ -56,12 +75,13 @@ const registerUser = asyncHandler(async (req, res) => {
 		password,
 		fullName,
 		avatar: avatar.url,
-		coverImage: coverImage.url || "",
+		coverImage: (coverImage && coverImage.url) || "",
 	});
+	console.log("created user Entry : \n", user);
 
 	//step 7
 	const createdUser = await User.findById(user._id).select(
-		"-password -refreshtoken"
+		"-password -refreshToken"
 	);
 
 	//step 8
@@ -73,8 +93,6 @@ const registerUser = asyncHandler(async (req, res) => {
 	res
 		.status(200)
 		.json(new ApiResponse(200, createdUser, "user registered successfully"));
-
-	res.status(200).json({ message: "ok" });
 });
 
 const loginUser = asyncHandler(async (req, res) =>
